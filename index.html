@@ -367,7 +367,7 @@
 
 <script>
 /* ---------------- Sürüm ---------------- */
-const APP_VERSION='2026.06.29-1';   // her güncellemede artar; telefonlar bunu görüp "Yenile" der
+const APP_VERSION='2026.06.29-2';   // her güncellemede artar; telefonlar bunu görüp "Yenile" der
 
 /* ---------------- Durum ---------------- */
 let sb=null, CARDS=[], CAMPS=[], activeSektor='Tümü';
@@ -647,9 +647,24 @@ function matchCard(hint){
   return {id:'',ambiguous:loose.length>1};
 }
 
+// Yapıştırılan metni temizler: akıllı tırnaklar, kod çitleri, baş/son fazla metin, sondaki virgül
+function sanitizeJson(raw){
+  let s=(raw||'').trim();
+  s=s.replace(/^```[a-zA-Z]*\s*/,'').replace(/```\s*$/,'').trim();   // kod çitleri
+  s=s.replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g,'"')          // kıvrık çift tırnak → "
+     .replace(/[\u2018\u2019\u201A\u201B\u2032\u2035\u02BC]/g,"'")    // kıvrık tek tırnak → '
+     .replace(/\u00A0/g,' ');                                         // kırılmaz boşluk
+  const fa=s.indexOf('['), fo=s.indexOf('{');
+  let start=(fa===-1)?fo:(fo===-1?fa:Math.min(fa,fo));
+  let end=Math.max(s.lastIndexOf(']'),s.lastIndexOf('}'));
+  if(start!==-1 && end!==-1 && end>start) s=s.slice(start,end+1);     // önündeki/sonundaki açıklamayı at
+  s=s.replace(/,\s*([\]}])/g,'$1');                                   // sondaki gereksiz virgül
+  return s;
+}
+
 function previewImport(){
   let data;
-  try{ data=JSON.parse($('impJson').value.trim()); }
+  try{ data=JSON.parse(sanitizeJson($('impJson').value)); }
   catch(e){ toast('JSON okunamadı — biçimi kontrol et',true); return; }
   if(!Array.isArray(data)) data=[data];
   if(data.length===0){ toast('Listede kampanya yok',true); return; }
