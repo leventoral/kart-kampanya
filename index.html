@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0F766E">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Kart Kampanya Takip</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg:#F5F6F3; --surface:#FFFFFF; --ink:#16191D; --muted:#5B6470; --line:#E4E7E2;
+    --accent:#0F766E; --accent-ink:#0B5550; --accent-soft:#E5F2F0;
+    --ok:#047857; --ok-bg:#ECFDF5; --warn:#B45309; --warn-bg:#FFF7ED; --dead:#64748B; --dead-bg:#F1F5F9;
+    --maximum:#1E3A8A; --world:#DC2626; --paraf:#7C3AED;
+    --r:14px; --shadow:0 1px 2px rgba(16,25,30,.05),0 6px 20px rgba(16,25,30,.06);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    font-family:'Hanken Grotesk',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    background:var(--bg); color:var(--ink); -webkit-font-smoothing:antialiased;
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  .wrap{max-width:760px;margin:0 auto;padding:0 16px}
+  a{color:var(--accent-ink)}
+  button{font-family:inherit;cursor:pointer}
+  .hidden{display:none!important}
+
+  /* Header */
+  header.top{position:sticky;top:0;z-index:30;background:rgba(245,246,243,.86);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .top-row{display:flex;align-items:center;gap:10px;padding:14px 0}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:-.02em}
+  .brand .mark{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,var(--accent),#14B8A6);position:relative;flex:none}
+  .brand .mark::after{content:"";position:absolute;left:4px;right:4px;top:9px;height:5px;background:rgba(255,255,255,.85);border-radius:2px}
+  .brand small{display:block;font-weight:500;font-size:11px;color:var(--muted);letter-spacing:0}
+  .spacer{flex:1}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--dead);flex:none}
+  .dot.on{background:var(--ok)}
+  .iconbtn{border:1px solid var(--line);background:var(--surface);border-radius:10px;width:38px;height:38px;display:grid;place-items:center;font-size:16px;color:var(--muted)}
+  .iconbtn:active{transform:scale(.96)}
+
+  /* Tabs */
+  .tabs{display:flex;gap:6px;padding:10px 0 4px}
+  .tab{flex:1;border:none;background:transparent;color:var(--muted);font-weight:600;font-size:14px;padding:9px 6px;border-radius:10px}
+  .tab.active{background:var(--ink);color:#fff}
+
+  /* Sektör chips */
+  .chips{display:flex;gap:8px;overflow-x:auto;padding:12px 0;scrollbar-width:none}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{flex:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:8px 14px;font-size:13.5px;font-weight:600}
+  .chip.active{background:var(--accent);border-color:var(--accent);color:#fff}
+  .searchbar{display:flex;gap:8px;margin:2px 0 8px}
+  .searchbar input{flex:1;border:1px solid var(--line);background:var(--surface);border-radius:11px;padding:11px 13px;font-size:15px;color:var(--ink)}
+  .searchbar input:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+
+  /* Verdict */
+  .verdict{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px 16px 14px;box-shadow:var(--shadow);margin-bottom:14px}
+  .verdict h2{margin:0 0 4px;font-size:18px;letter-spacing:-.02em}
+  .verdict p{margin:0;color:var(--muted);font-size:13.5px}
+  .verdict .big{font-weight:800;color:var(--accent-ink)}
+
+  /* Card row */
+  .crow{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);margin-bottom:12px;overflow:hidden}
+  .crow .stripe{height:4px;background:var(--accent)}
+  .crow .body{padding:13px 15px}
+  .crow .head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .crow .name{font-weight:800;letter-spacing:-.01em}
+  .crow .prog{font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  .crow .none{color:var(--muted);font-size:13.5px;margin-top:6px}
+
+  .camp{border-top:1px dashed var(--line);padding:11px 0 2px;margin-top:10px}
+  .camp:first-of-type{border-top:none;margin-top:8px;padding-top:2px}
+  .camp .line1{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .camp .ttl{font-weight:700;font-size:14.5px}
+  .camp .odul{font-size:12.5px;font-weight:700;color:var(--accent-ink);background:var(--accent-soft);padding:2px 8px;border-radius:7px}
+  .camp .meta{color:var(--muted);font-size:13px;margin-top:4px;line-height:1.5}
+  .camp .meta b{color:var(--ink);font-weight:600}
+  .camp .foot{display:flex;align-items:center;gap:10px;margin-top:7px;flex-wrap:wrap}
+  .badge{font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:999px}
+  .badge.ok{color:var(--ok);background:var(--ok-bg)}
+  .badge.warn{color:var(--warn);background:var(--warn-bg)}
+  .badge.dead{color:var(--dead);background:var(--dead-bg)}
+  .camp.isdead .ttl,.camp.isdead .meta{opacity:.62}
+  .lnk{font-size:12.5px;font-weight:600;text-decoration:none}
+  .mini{font-size:12.5px;color:var(--muted);background:none;border:none;padding:0;font-weight:600}
+  .mini:hover{color:var(--ink)}
+
+  /* Manage list */
+  .listhead{display:flex;align-items:center;justify-content:space-between;margin:8px 0 12px}
+  .listhead h2{margin:0;font-size:17px;letter-spacing:-.02em}
+  .btn{border:none;border-radius:11px;padding:10px 14px;font-weight:700;font-size:14px}
+  .btn.primary{background:var(--accent);color:#fff}
+  .btn.ghost{background:var(--surface);border:1px solid var(--line);color:var(--ink)}
+  .btn.sm{padding:7px 11px;font-size:13px}
+  .btn:active{transform:scale(.98)}
+  .catlabel{font-size:11.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin:16px 0 8px}
+
+  /* Empty / toast */
+  .empty{text-align:center;color:var(--muted);padding:40px 20px;font-size:14.5px}
+  #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:11px 16px;border-radius:11px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:.25s;z-index:80;max-width:90%}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  #toast.err{background:#B91C1C}
+
+  /* Modal */
+  .modal{position:fixed;inset:0;z-index:70;display:none;align-items:flex-end;justify-content:center}
+  .modal.open{display:flex}
+  .modal .scrim{position:absolute;inset:0;background:rgba(16,25,30,.45)}
+  .sheet{position:relative;background:var(--surface);width:100%;max-width:760px;max-height:92vh;overflow-y:auto;border-radius:20px 20px 0 0;padding:18px 18px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -10px 40px rgba(0,0,0,.18)}
+  @media(min-width:760px){.modal{align-items:center}.sheet{border-radius:18px;max-height:88vh}}
+  .sheet h3{margin:2px 0 14px;font-size:18px;letter-spacing:-.02em}
+  .field{margin-bottom:12px}
+  .field label{display:block;font-size:12.5px;font-weight:700;color:var(--muted);margin-bottom:5px}
+  .field input,.field select,.field textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:15px;font-family:inherit;color:var(--ink);background:var(--surface)}
+  .field textarea{min-height:66px;resize:vertical}
+  .field input:focus,.field select:focus,.field textarea:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .sheet-actions{display:flex;gap:10px;margin-top:8px}
+  .sheet-actions .btn{flex:1}
+  .danger{color:#B91C1C;background:none;border:none;font-weight:700;font-size:13.5px;padding:8px 0}
+
+  /* Setup */
+  .setup{max-width:520px;margin:6vh auto;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:24px;box-shadow:var(--shadow)}
+  .setup h1{margin:0 0 6px;font-size:22px;letter-spacing:-.02em}
+  .setup p{color:var(--muted);font-size:14px;line-height:1.55;margin:0 0 16px}
+  .setup ol{color:var(--muted);font-size:13.5px;line-height:1.7;padding-left:18px;margin:0 0 16px}
+  .setup code{background:var(--dead-bg);padding:1px 6px;border-radius:5px;font-size:12.5px}
+</style>
+</head>
+<body>
+
+<!-- ===== SETUP (ilk açılışta) ===== -->
+<div id="setup" class="setup hidden">
+  <h1>Bağlantıyı kur</h1>
+  <p>Bu cihaz henüz Supabase veritabanına bağlı değil. Tek seferlik: Supabase panelinden iki bilgiyi yapıştır.</p>
+  <ol>
+    <li>Supabase &gt; projen &gt; <b>Settings &gt; API</b></li>
+    <li><code>Project URL</code>'i ve <code>anon public</code> anahtarını kopyala</li>
+    <li>Aşağıya yapıştır, <b>Bağlan</b> de</li>
+  </ol>
+  <div class="field"><label>Project URL</label><input id="suUrl" placeholder="https://xxxx.supabase.co"></div>
+  <div class="field"><label>anon public anahtar</label><input id="suKey" placeholder="eyJhbGciOi..."></div>
+  <div class="sheet-actions"><button class="btn primary" onclick="saveConfig()">Bağlan</button></div>
+</div>
+
+<!-- ===== APP ===== -->
+<div id="app" class="hidden">
+  <header class="top">
+    <div class="wrap">
+      <div class="top-row">
+        <div class="brand"><span class="mark"></span><span>Kart Kampanya<small>hangi kartım kazandırıyor?</small></span></div>
+        <span class="spacer"></span>
+        <span id="conn" class="dot" title="bağlantı"></span>
+        <button class="iconbtn" title="Ayarlar" onclick="openSettings()">⚙</button>
+      </div>
+      <div class="tabs">
+        <button class="tab active" data-view="sorgu" onclick="switchView('sorgu')">Sorgula</button>
+        <button class="tab" data-view="kampanya" onclick="switchView('kampanya')">Kampanyalar</button>
+        <button class="tab" data-view="kart" onclick="switchView('kart')">Kartlarım</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <!-- SORGU -->
+    <section id="view-sorgu">
+      <div class="chips" id="sektorChips"></div>
+      <div class="searchbar"><input id="freeSearch" placeholder="Sektör ara: diş, optik, market, mobilya..." oninput="runQuery()"></div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);margin:2px 0 14px">
+        <input type="checkbox" id="showDead" onchange="runQuery()"> Süresi geçenleri de göster
+      </label>
+      <div id="queryResult"></div>
+    </section>
+
+    <!-- KAMPANYA -->
+    <section id="view-kampanya" class="hidden">
+      <div class="listhead"><h2>Kampanyalar</h2><div style="display:flex;gap:8px"><button class="btn ghost sm" onclick="openImport()">↓ İçe aktar</button><button class="btn primary sm" onclick="openCampaign()">+ Kampanya</button></div></div>
+      <div id="campaignList"></div>
+    </section>
+
+    <!-- KART -->
+    <section id="view-kart" class="hidden">
+      <div class="listhead"><h2>Kartlarım</h2><button class="btn primary sm" onclick="openCard()">+ Kart</button></div>
+      <div id="cardList"></div>
+    </section>
+  </main>
+</div>
+
+<!-- ===== Kart modalı ===== -->
+<div class="modal" id="cardModal">
+  <div class="scrim" onclick="closeModal('cardModal')"></div>
+  <div class="sheet">
+    <h3 id="cardModalTitle">Kart ekle</h3>
+    <input type="hidden" id="c_id">
+    <div class="field"><label>Kart adı</label><input id="c_ad" placeholder="Maximiles Black"></div>
+    <div class="grid2">
+      <div class="field"><label>Banka</label><input id="c_banka" placeholder="İş Bankası"></div>
+      <div class="field"><label>Program</label><input id="c_program" placeholder="Maximum / World / Paraf"></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Kategori</label>
+        <select id="c_kategori">
+          <option value="bireysel">Bireysel</option>
+          <option value="es">Eş</option>
+          <option value="ek">Ek kart</option>
+          <option value="ticari">Ticari</option>
+          <option value="sirket">Şirket</option>
+        </select>
+      </div>
+      <div class="field"><label>Sahip</label><input id="c_sahip" placeholder="Levent"></div>
+    </div>
+    <div class="field"><label>Kart logosu (taksit farkı için, ops.)</label>
+      <select id="c_logo">
+        <option value="">—</option>
+        <option value="troy">Troy</option>
+        <option value="visa">Visa</option>
+        <option value="mastercard">Mastercard</option>
+      </select>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn ghost" onclick="closeModal('cardModal')">Vazgeç</button>
+      <button class="btn primary" onclick="saveCard()">Kaydet</button>
+    </div>
+    <div style="text-align:center"><button class="danger hidden" id="c_delete" onclick="deleteCard()">Bu kartı sil</button></div>
+  </div>
+</div>
+
+<!-- ===== Kampanya modalı ===== -->
+<div class="modal" id="campModal">
+  <div class="scrim" onclick="closeModal('campModal')"></div>
+  <div class="sheet">
+    <h3 id="campModalTitle">Kampanya ekle</h3>
+    <input type="hidden" id="k_id">
+    <div class="field"><label>Kart</label><select id="k_card"></select></div>
+    <div class="grid2">
+      <div class="field"><label>Sektör</label><input id="k_sektor" list="sektorList" placeholder="sağlık"></div>
+      <div class="field"><label>Tip</label>
+        <select id="k_tip">
+          <option value="indirim">İndirim</option>
+          <option value="pesin-taksit">Peşin fiyatına taksit</option>
+          <option value="ek-taksit">Ek taksit (+taksit)</option>
+          <option value="faizsiz-taksit">Faizsiz taksit</option>
+          <option value="puan-iade">Puan / iade</option>
+          <option value="hediye">Hediye</option>
+        </select>
+      </div>
+    </div>
+    <div class="field"><label>Başlık</label><input id="k_baslik" placeholder="Sağlıkta ilave 2 taksit"></div>
+    <div class="grid2">
+      <div class="field"><label>Ödül / kazanç</label><input id="k_odul" placeholder="+2 taksit / 400 TL puan"></div>
+      <div class="field"><label>Alt limit (TL)</label><input id="k_min" type="number" inputmode="numeric" placeholder="1500"></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Başlangıç</label><input id="k_bas" type="date"></div>
+      <div class="field"><label>Bitiş</label><input id="k_bit" type="date"></div>
+    </div>
+    <div class="field"><label>Koşul</label><textarea id="k_kosul" placeholder="POS'ta seçilmeli, optik hariç..."></textarea></div>
+    <div class="field"><label>Kaynak (link)</label><input id="k_kaynak" placeholder="https://..."></div>
+    <div class="field"><label>Not</label><input id="k_not" placeholder="ops."></div>
+    <div class="sheet-actions">
+      <button class="btn ghost" onclick="closeModal('campModal')">Vazgeç</button>
+      <button class="btn primary" onclick="saveCampaign()">Kaydet</button>
+    </div>
+    <div style="text-align:center"><button class="danger hidden" id="k_delete" onclick="deleteCampaign()">Bu kampanyayı sil</button></div>
+  </div>
+</div>
+
+<!-- ===== İçe aktarma modalı ===== -->
+<div class="modal" id="importModal">
+  <div class="scrim" onclick="closeModal('importModal')"></div>
+  <div class="sheet">
+    <h3>Kampanyaları içe aktar</h3>
+    <p style="color:var(--muted);font-size:13px;margin:0 0 12px;line-height:1.5">A-asistanından gelen JSON'u yapıştır → Önizle → karta eşleştir → ekle. Kart, <code style="background:var(--dead-bg);padding:1px 5px;border-radius:4px">kart</code> alanından (ad / program / banka) otomatik eşlenir; emin olunmayanı sen seçersin.</p>
+    <div id="importStep1">
+      <div class="field"><textarea id="impJson" style="min-height:150px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px" placeholder='[ { "kart":"Maximiles Black", "sektor":"market", "baslik":"...", "tip":"puan-iade", "odul":"...", "kosul":"...", "min_tutar":1500, "baslangic":"2026-06-01", "bitis":"2026-06-30", "kaynak":"https://..." } ]'></textarea></div>
+      <div class="sheet-actions">
+        <button class="btn ghost" onclick="closeModal('importModal')">Vazgeç</button>
+        <button class="btn primary" onclick="previewImport()">Önizle</button>
+      </div>
+    </div>
+    <div id="importStep2" class="hidden">
+      <div id="importPreview"></div>
+      <div class="sheet-actions">
+        <button class="btn ghost" onclick="backImport()">Geri</button>
+        <button class="btn primary" id="impAddBtn" onclick="runImport()">Ekle</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<datalist id="sektorList"></datalist>
+<div id="toast"></div>
+
+<script>
+/* ---------------- Durum ---------------- */
+let sb=null, CARDS=[], CAMPS=[], activeSektor='Tümü';
+const SEKTORLER=['Tümü','sağlık','akaryakıt','market','giyim','eğitim','e-ticaret','mobilya','elektronik','seyahat','restoran'];
+const PROGCOLOR={maximum:'var(--maximum)',world:'var(--world)',paraf:'var(--paraf)'};
+const CAT={bireysel:'Bireysel',es:'Eş',ek:'Ek kartlar',ticari:'Ticari',sirket:'Şirket'};
+const CATORDER=['bireysel','es','ek','ticari','sirket'];
+
+/* ---------------- Yardımcılar ---------------- */
+const $=id=>document.getElementById(id);
+const trLower=s=>(s||'').toLocaleLowerCase('tr-TR').trim();
+const todayISO=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
+function esc(s){return (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function toast(msg,err){const t=$('toast');t.textContent=msg;t.className='show'+(err?' err':'');setTimeout(()=>t.className='',2600);}
+function progColor(p){return PROGCOLOR[trLower(p)]||'var(--accent)';}
+function fmtDate(d){if(!d)return '';const[y,m,da]=d.split('-');return da+'.'+m+'.'+y;}
+
+function status(c){
+  const t=todayISO();
+  if(c.bitis && c.bitis<t) return {k:'dead',label:'süresi doldu',txt:'Bitti: '+fmtDate(c.bitis)};
+  if(c.baslangic && c.baslangic>t) return {k:'warn',label:'yaklaşıyor',txt:'Başlangıç: '+fmtDate(c.baslangic)};
+  return {k:'ok',label:'aktif',txt:c.bitis?('Bitiş: '+fmtDate(c.bitis)):'Tarih belirsiz'};
+}
+
+/* ---------------- Bağlantı ---------------- */
+function saveConfig(){
+  const url=$('suUrl').value.trim(), key=$('suKey').value.trim();
+  if(!url||!key){toast('URL ve anahtar gerekli',true);return;}
+  localStorage.setItem('ccc_url',url); localStorage.setItem('ccc_key',key);
+  boot();
+}
+function openSettings(){
+  if(confirm('Bağlantı bilgilerini sıfırlamak ister misin? (kampanya verisi Supabase\'de kalır)')){
+    localStorage.removeItem('ccc_url'); localStorage.removeItem('ccc_key'); location.reload();
+  }
+}
+async function boot(){
+  const url=localStorage.getItem('ccc_url'), key=localStorage.getItem('ccc_key');
+  if(!url||!key){ $('setup').classList.remove('hidden'); $('app').classList.add('hidden'); return; }
+  try{
+    sb=window.supabase.createClient(url,key);
+    $('setup').classList.add('hidden'); $('app').classList.remove('hidden');
+    buildChips();
+    await loadAll();
+    $('conn').classList.add('on');
+  }catch(e){ toast('Bağlantı kurulamadı',true); console.error(e); $('setup').classList.remove('hidden'); $('app').classList.add('hidden'); }
+}
+
+async function loadAll(){
+  const [c1,c2]=await Promise.all([
+    sb.from('cards').select('*').order('created_at',{ascending:true}),
+    sb.from('campaigns').select('*, card:cards(*)').order('bitis',{ascending:true})
+  ]);
+  if(c1.error||c2.error){toast('Veri okunamadı — şema kuruldu mu?',true);console.error(c1.error||c2.error);return;}
+  CARDS=c1.data||[]; CAMPS=c2.data||[];
+  renderAll();
+}
+function renderAll(){ runQuery(); renderCampaignList(); renderCardList(); fillCardSelect(); fillSektorList(); }
+
+/* ---------------- Sorgu ---------------- */
+function buildChips(){
+  $('sektorChips').innerHTML=SEKTORLER.map(s=>
+    `<button class="chip${s===activeSektor?' active':''}" onclick="pickSektor('${s}')">${s==='Tümü'?'Tümü':esc(s)}</button>`).join('');
+}
+function pickSektor(s){activeSektor=s;$('freeSearch').value='';buildChips();runQuery();}
+
+function runQuery(){
+  const free=trLower($('freeSearch').value);
+  const showDead=$('showDead').checked;
+  let list=CAMPS.slice();
+  if(free){ list=list.filter(c=>trLower(c.sektor).includes(free)||trLower(c.baslik).includes(free)); activeSektor='Tümü'; buildChips(); }
+  else if(activeSektor!=='Tümü'){ list=list.filter(c=>trLower(c.sektor)===trLower(activeSektor)); }
+
+  // kart bazında grupla
+  const byCard=new Map();
+  CARDS.filter(k=>k.aktif!==false).forEach(k=>byCard.set(k.id,{card:k,camps:[]}));
+  list.forEach(c=>{ if(c.card_id&&byCard.has(c.card_id)) byCard.get(c.card_id).camps.push(c); });
+
+  const label = free? ('"'+$('freeSearch').value.trim()+'"') : activeSektor;
+  let activeCards=0, rows='';
+  byCard.forEach(({card,camps})=>{
+    let shown=camps.filter(c=>showDead||status(c).k!=='dead');
+    shown.sort((a,b)=>{const o={ok:0,warn:1,dead:2};return o[status(a).k]-o[status(b).k];});
+    const hasActive=camps.some(c=>status(c).k==='ok');
+    if(hasActive) activeCards++;
+    if(shown.length===0 && (label==='Tümü')) return; // Tümü görünümünde boş kartı atla
+    rows+=cardRowHTML(card,shown);
+  });
+
+  let verdictText;
+  if(label==='Tümü') verdictText=`Toplam <span class="big">${CAMPS.filter(c=>status(c).k==='ok').length}</span> aktif kampanya, ${CARDS.length} kart.`;
+  else verdictText = activeCards>0
+      ? `<span class="big">${activeCards}</span> kartında aktif kampanya var.`
+      : `Aktif kampanya yok. ${label} için kartlarına tanımlı güncel kampanya bulunmuyor.`;
+
+  $('queryResult').innerHTML =
+    `<div class="verdict"><h2>${label==='Tümü'?'Tüm kampanyalar':esc(label)+' için'}</h2><p>${verdictText}</p></div>`
+    + (rows || `<div class="empty">Gösterilecek kampanya yok.${!$('showDead').checked?'<br><small>Süresi geçenler gizli olabilir.</small>':''}</div>`);
+}
+
+function cardRowHTML(card,camps){
+  let inner;
+  if(camps.length===0){ inner=`<div class="none">Bu sektörde tanımlı kampanya yok.</div>`; }
+  else inner=camps.map(c=>{
+    const st=status(c);
+    return `<div class="camp ${st.k==='dead'?'isdead':''}">
+      <div class="line1"><span class="ttl">${esc(c.baslik)}</span>${c.odul?`<span class="odul">${esc(c.odul)}</span>`:''}</div>
+      <div class="meta">${c.kosul?esc(c.kosul):''}${c.min_tutar?`${c.kosul?' · ':''}<b>alt limit ${Number(c.min_tutar).toLocaleString('tr-TR')} TL</b>`:''}</div>
+      <div class="foot">
+        <span class="badge ${st.k}">${st.label}</span>
+        <span style="font-size:12.5px;color:var(--muted)">${st.txt}</span>
+        ${c.kaynak?`<a class="lnk" href="${esc(c.kaynak)}" target="_blank" rel="noopener">kaynak ↗</a>`:''}
+        <button class="mini" onclick="openCampaign('${c.id}')">düzenle</button>
+      </div>
+    </div>`;
+  }).join('');
+  return `<div class="crow"><div class="stripe" style="background:${progColor(card.program)}"></div>
+    <div class="body"><div class="head"><span class="name">${esc(card.ad)}</span><span class="prog">${esc(card.program||'')}${card.banka?' · '+esc(card.banka):''}</span></div>${inner}</div></div>`;
+}
+
+/* ---------------- Kampanya listesi ---------------- */
+function renderCampaignList(){
+  if(CAMPS.length===0){$('campaignList').innerHTML=`<div class="empty">Henüz kampanya yok. Sağ üstten <b>+ Kampanya</b> ile ekle.</div>`;return;}
+  const order={ok:0,warn:1,dead:2};
+  const sorted=CAMPS.slice().sort((a,b)=>order[status(a).k]-order[status(b).k] || (a.sektor>b.sektor?1:-1));
+  $('campaignList').innerHTML=sorted.map(c=>{
+    const st=status(c), card=c.card||CARDS.find(k=>k.id===c.card_id)||{};
+    return `<div class="crow"><div class="stripe" style="background:${progColor(card.program)}"></div>
+      <div class="body">
+        <div class="head"><span class="name">${esc(c.baslik)}</span><span class="prog">${esc(c.sektor)}</span></div>
+        <div class="meta" style="color:var(--muted);font-size:13px;margin-top:4px">
+          ${esc(card.ad||'—')}${c.odul?' · <b style="color:var(--accent-ink)">'+esc(c.odul)+'</b>':''}
+        </div>
+        <div class="foot">
+          <span class="badge ${st.k}">${st.label}</span>
+          <span style="font-size:12.5px;color:var(--muted)">${st.txt}</span>
+          <button class="mini" onclick="openCampaign('${c.id}')">düzenle</button>
+        </div>
+      </div></div>`;
+  }).join('');
+}
+
+/* ---------------- Kart listesi ---------------- */
+function renderCardList(){
+  if(CARDS.length===0){$('cardList').innerHTML=`<div class="empty">Henüz kart yok. <b>+ Kart</b> ile ekle.</div>`;return;}
+  let html='';
+  CATORDER.forEach(cat=>{
+    const group=CARDS.filter(k=>(k.kategori||'bireysel')===cat);
+    if(group.length===0)return;
+    html+=`<div class="catlabel">${CAT[cat]}</div>`;
+    group.forEach(k=>{
+      const n=CAMPS.filter(c=>c.card_id===k.id&&status(c).k==='ok').length;
+      html+=`<div class="crow"><div class="stripe" style="background:${progColor(k.program)}"></div>
+        <div class="body"><div class="head"><span class="name">${esc(k.ad)}</span><span class="prog">${esc(k.program||'')}${k.banka?' · '+esc(k.banka):''}</span></div>
+        <div class="foot"><span style="font-size:13px;color:var(--muted)">${k.sahip?esc(k.sahip)+' · ':''}${n} aktif kampanya</span>
+        <button class="mini" onclick="openCard('${k.id}')">düzenle</button></div></div></div>`;
+    });
+  });
+  $('cardList').innerHTML=html;
+}
+
+/* ---------------- Görünüm ---------------- */
+function switchView(v){
+  ['sorgu','kampanya','kart'].forEach(x=>$('view-'+x).classList.toggle('hidden',x!==v));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.view===v));
+}
+function fillSektorList(){
+  const set=new Set(SEKTORLER.filter(s=>s!=='Tümü'));
+  CAMPS.forEach(c=>set.add(c.sektor));
+  $('sektorList').innerHTML=[...set].map(s=>`<option value="${esc(s)}">`).join('');
+}
+function fillCardSelect(){
+  $('k_card').innerHTML=CARDS.map(k=>`<option value="${k.id}">${esc(k.ad)} — ${esc(k.program||'')}</option>`).join('');
+}
+
+/* ---------------- Modal: Kart ---------------- */
+function openCard(id){
+  const m=$('cardModal'); m.classList.add('open');
+  const del=$('c_delete');
+  if(id){
+    const k=CARDS.find(x=>x.id===id); if(!k)return;
+    $('cardModalTitle').textContent='Kartı düzenle';
+    $('c_id').value=k.id; $('c_ad').value=k.ad||''; $('c_banka').value=k.banka||'';
+    $('c_program').value=k.program||''; $('c_kategori').value=k.kategori||'bireysel';
+    $('c_sahip').value=k.sahip||''; $('c_logo').value=k.logo||'';
+    del.classList.remove('hidden');
+  }else{
+    $('cardModalTitle').textContent='Kart ekle';
+    ['c_id','c_ad','c_banka','c_program','c_sahip'].forEach(f=>$(f).value='');
+    $('c_kategori').value='bireysel'; $('c_logo').value=''; del.classList.add('hidden');
+  }
+}
+async function saveCard(){
+  const ad=$('c_ad').value.trim(); if(!ad){toast('Kart adı gerekli',true);return;}
+  const row={ad,banka:$('c_banka').value.trim()||null,program:$('c_program').value.trim()||null,
+    kategori:$('c_kategori').value,sahip:$('c_sahip').value.trim()||null,logo:$('c_logo').value||null};
+  const id=$('c_id').value;
+  const r=id? await sb.from('cards').update(row).eq('id',id) : await sb.from('cards').insert(row);
+  if(r.error){toast('Kaydedilemedi',true);console.error(r.error);return;}
+  closeModal('cardModal'); toast(id?'Kart güncellendi':'Kart eklendi'); await loadAll();
+}
+async function deleteCard(){
+  const id=$('c_id').value; if(!id)return;
+  if(!confirm('Bu kartı ve ona bağlı kampanyaları silmek istediğine emin misin?'))return;
+  const r=await sb.from('cards').delete().eq('id',id);
+  if(r.error){toast('Silinemedi',true);return;}
+  closeModal('cardModal'); toast('Kart silindi'); await loadAll();
+}
+
+/* ---------------- Modal: Kampanya ---------------- */
+function openCampaign(id){
+  fillCardSelect();
+  const m=$('campModal'); m.classList.add('open');
+  const del=$('k_delete');
+  if(id){
+    const c=CAMPS.find(x=>x.id===id); if(!c)return;
+    $('campModalTitle').textContent='Kampanyayı düzenle';
+    $('k_id').value=c.id; $('k_card').value=c.card_id||''; $('k_sektor').value=c.sektor||'';
+    $('k_tip').value=c.tip||'indirim'; $('k_baslik').value=c.baslik||''; $('k_odul').value=c.odul||'';
+    $('k_min').value=c.min_tutar||''; $('k_bas').value=c.baslangic||''; $('k_bit').value=c.bitis||'';
+    $('k_kosul').value=c.kosul||''; $('k_kaynak').value=c.kaynak||''; $('k_not').value=c.notlar||'';
+    del.classList.remove('hidden');
+  }else{
+    $('campModalTitle').textContent='Kampanya ekle';
+    ['k_id','k_sektor','k_baslik','k_odul','k_min','k_bas','k_bit','k_kosul','k_kaynak','k_not'].forEach(f=>$(f).value='');
+    $('k_tip').value='indirim'; del.classList.add('hidden');
+    if(activeSektor!=='Tümü')$('k_sektor').value=activeSektor;
+  }
+}
+async function saveCampaign(){
+  const baslik=$('k_baslik').value.trim(), sektor=$('k_sektor').value.trim(), card_id=$('k_card').value;
+  if(!card_id){toast('Önce kart ekle',true);return;}
+  if(!baslik||!sektor){toast('Başlık ve sektör gerekli',true);return;}
+  const row={card_id,sektor,baslik,tip:$('k_tip').value,odul:$('k_odul').value.trim()||null,
+    min_tutar:$('k_min').value?Number($('k_min').value):null,
+    baslangic:$('k_bas').value||null,bitis:$('k_bit').value||null,
+    kosul:$('k_kosul').value.trim()||null,kaynak:$('k_kaynak').value.trim()||null,
+    notlar:$('k_not').value.trim()||null,updated_at:new Date().toISOString()};
+  const id=$('k_id').value;
+  const r=id? await sb.from('campaigns').update(row).eq('id',id) : await sb.from('campaigns').insert(row);
+  if(r.error){toast('Kaydedilemedi',true);console.error(r.error);return;}
+  closeModal('campModal'); toast(id?'Kampanya güncellendi':'Kampanya eklendi'); await loadAll();
+}
+async function deleteCampaign(){
+  const id=$('k_id').value; if(!id)return;
+  if(!confirm('Bu kampanyayı silmek istediğine emin misin?'))return;
+  const r=await sb.from('campaigns').delete().eq('id',id);
+  if(r.error){toast('Silinemedi',true);return;}
+  closeModal('campModal'); toast('Kampanya silindi'); await loadAll();
+}
+
+/* ---------------- İçe aktarma ---------------- */
+let IMPORT_ROWS=[];
+function openImport(){
+  $('importModal').classList.add('open');
+  $('importStep1').classList.remove('hidden'); $('importStep2').classList.add('hidden');
+  $('impJson').value=''; IMPORT_ROWS=[];
+}
+function backImport(){ $('importStep1').classList.remove('hidden'); $('importStep2').classList.add('hidden'); }
+
+// kart eşleştirme: ad > program(+banka) > banka
+function matchCard(hint){
+  if(!hint) return {id:'',ambiguous:false};
+  const h=trLower(hint);
+  let m=CARDS.find(k=>trLower(k.ad)===h); if(m) return {id:m.id,ambiguous:false};
+  let byProg=CARDS.filter(k=>trLower(k.program)===h);
+  if(byProg.length===1) return {id:byProg[0].id,ambiguous:false};
+  if(byProg.length>1) return {id:'',ambiguous:true};         // örn. "World" → 2 kart, kullanıcı seçsin
+  let byBank=CARDS.filter(k=>trLower(k.banka)===h);
+  if(byBank.length===1) return {id:byBank[0].id,ambiguous:false};
+  // serbest içerme (ad/program/banka)
+  let loose=CARDS.filter(k=>trLower(k.ad).includes(h)||trLower(k.program||'').includes(h)||trLower(k.banka||'').includes(h));
+  if(loose.length===1) return {id:loose[0].id,ambiguous:false};
+  return {id:'',ambiguous:loose.length>1};
+}
+
+function previewImport(){
+  let data;
+  try{ data=JSON.parse($('impJson').value.trim()); }
+  catch(e){ toast('JSON okunamadı — biçimi kontrol et',true); return; }
+  if(!Array.isArray(data)) data=[data];
+  if(data.length===0){ toast('Listede kampanya yok',true); return; }
+
+  IMPORT_ROWS=data.map((c,i)=>{
+    const mt=matchCard(c.kart||c.card||c.program||c.banka);
+    return {
+      i, card_id:mt.id, ambiguous:mt.ambiguous, karthint:c.kart||c.program||c.banka||'',
+      sektor:c.sektor||'', baslik:c.baslik||c.title||'', tip:c.tip||'indirim',
+      odul:c.odul||null, kosul:c.kosul||null,
+      min_tutar:(c.min_tutar!=null&&c.min_tutar!=='')?Number(c.min_tutar):null,
+      baslangic:c.baslangic||null, bitis:c.bitis||null, kaynak:c.kaynak||null, notlar:c.notlar||c.not||null
+    };
+  });
+
+  const cardOpts=id=>['<option value="">— kart seç —</option>'].concat(
+    CARDS.map(k=>`<option value="${k.id}"${k.id===id?' selected':''}>${esc(k.ad)} — ${esc(k.program||'')}</option>`)).join('');
+
+  $('importPreview').innerHTML = IMPORT_ROWS.map(r=>{
+    const st=status(r); const bad=!r.card_id;
+    return `<div class="crow" style="margin-bottom:10px"><div class="stripe" style="background:${bad?'var(--dead)':'var(--accent)'}"></div>
+      <div class="body" style="padding:11px 13px">
+        <div class="head"><span class="name" style="font-size:14.5px">${esc(r.baslik)||'<i>başlık yok</i>'}</span><span class="prog">${esc(r.sektor)}</span></div>
+        <div class="meta" style="font-size:12.5px;color:var(--muted);margin-top:3px">${r.odul?esc(r.odul)+' · ':''}${r.bitis?'bitiş '+fmtDate(r.bitis):'tarih yok'} <span class="badge ${st.k}" style="margin-left:4px">${st.label}</span></div>
+        <div style="margin-top:8px"><select onchange="IMPORT_ROWS[${r.i}].card_id=this.value;updateImpCount()" style="width:100%;border:1px solid ${bad?'#FCA5A5':'var(--line)'};border-radius:9px;padding:8px 10px;font-size:13.5px">${cardOpts(r.card_id)}</select>
+        ${r.ambiguous?'<div style="font-size:11.5px;color:var(--warn);margin-top:4px">Bu program birden fazla karta uyuyor — doğru kartı seç.</div>':''}
+        ${(!r.card_id&&!r.ambiguous)?`<div style="font-size:11.5px;color:var(--warn);margin-top:4px">"${esc(r.karthint)}" eşleşmedi — kart seç.</div>`:''}</div>
+      </div></div>`;
+  }).join('');
+
+  $('importStep1').classList.add('hidden'); $('importStep2').classList.remove('hidden');
+  updateImpCount();
+}
+function updateImpCount(){
+  const n=IMPORT_ROWS.filter(r=>r.card_id&&r.baslik&&r.sektor).length;
+  $('impAddBtn').textContent = n>0?`${n} kampanyayı ekle`:'Eklenecek yok';
+  $('impAddBtn').disabled = n===0;
+  $('impAddBtn').style.opacity = n===0?0.5:1;
+}
+async function runImport(){
+  const rows=IMPORT_ROWS.filter(r=>r.card_id&&r.baslik&&r.sektor).map(r=>({
+    card_id:r.card_id, sektor:r.sektor, baslik:r.baslik, tip:r.tip, odul:r.odul, kosul:r.kosul,
+    min_tutar:r.min_tutar, baslangic:r.baslangic, bitis:r.bitis, kaynak:r.kaynak, notlar:r.notlar
+  }));
+  if(rows.length===0){ toast('Eklenecek kampanya yok',true); return; }
+  const r=await sb.from('campaigns').insert(rows);
+  if(r.error){ toast('İçe aktarılamadı',true); console.error(r.error); return; }
+  closeModal('importModal'); toast(rows.length+' kampanya eklendi'); await loadAll(); switchView('kampanya');
+}
+
+function closeModal(id){$(id).classList.remove('open');}
+
+/* ---------------- PWA manifest (inline) ---------------- */
+(function(){
+  const icon='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192"><rect width="192" height="192" rx="40" fill="#0F766E"/><rect x="40" y="78" width="112" height="20" rx="6" fill="#fff"/></svg>');
+  const man={name:'Kart Kampanya Takip',short_name:'Kampanya',start_url:'.',display:'standalone',background_color:'#F5F6F3',theme_color:'#0F766E',icons:[{src:icon,sizes:'192x192',type:'image/svg+xml'}]};
+  const blob=new Blob([JSON.stringify(man)],{type:'application/json'});
+  const l=document.createElement('link'); l.rel='manifest'; l.href=URL.createObjectURL(blob); document.head.appendChild(l);
+})();
+
+boot();
+</script>
+</body>
+</html>
