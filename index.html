@@ -6,6 +6,9 @@
 <meta name="theme-color" content="#0F766E">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Kart Kampanya Takip</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -123,6 +126,20 @@
   .sheet-actions .btn{flex:1}
   .danger{color:#B91C1C;background:none;border:none;font-weight:700;font-size:13.5px;padding:8px 0}
 
+  /* Güncelle sekmesi */
+  .gcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:16px;margin:14px 0}
+  .gtitle{margin:0 0 6px;font-size:17px;letter-spacing:-.02em}
+  .gp{color:var(--muted);font-size:13.5px;line-height:1.55;margin:0 0 12px}
+  .gsteps{margin:0 0 14px;padding-left:20px;color:var(--ink);font-size:14px;line-height:1.7}
+  .gsteps li{margin-bottom:6px}
+  .gbox{background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:12px}
+  .glabel{display:flex;align-items:center;justify-content:space-between;font-size:12.5px;font-weight:700;color:var(--muted);margin-bottom:7px}
+  .gfeed{width:100%;border:1px solid var(--line);border-radius:9px;padding:10px 12px;font-size:13px;font-family:inherit;line-height:1.5;min-height:96px;resize:vertical;color:var(--ink);background:var(--surface)}
+  .gactions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .grow{display:flex;align-items:center;gap:10px;margin:8px 0}
+  .gswitch{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600}
+  .grow select{border:1px solid var(--line);border-radius:9px;padding:8px 10px;font-size:14px;font-family:inherit;color:var(--ink);background:var(--surface)}
+
   /* Setup */
   .setup{max-width:520px;margin:6vh auto;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:24px;box-shadow:var(--shadow)}
   .setup h1{margin:0 0 6px;font-size:22px;letter-spacing:-.02em}
@@ -161,11 +178,26 @@
         <button class="tab active" data-view="sorgu" onclick="switchView('sorgu')">Sorgula</button>
         <button class="tab" data-view="kampanya" onclick="switchView('kampanya')">Kampanyalar</button>
         <button class="tab" data-view="kart" onclick="switchView('kart')">Kartlarım</button>
+        <button class="tab" data-view="guncelle" onclick="switchView('guncelle')">Güncelle</button>
       </div>
     </div>
   </header>
 
   <main class="wrap">
+    <!-- GÜNCELLEME ŞERİDİ (yeni sürüm yayında) -->
+    <div id="updateBar" class="hidden" style="background:var(--accent-soft);border:1px solid #B9DED9;border-radius:var(--r);padding:12px 14px;margin:14px 0;display:flex;align-items:center;gap:10px">
+      <span style="font-size:18px">⬆️</span>
+      <div style="flex:1"><div style="font-weight:700;font-size:14px">Yeni sürüm yayında</div><div style="font-size:12.5px;color:var(--muted)">Güncellemeyi almak için yenile.</div></div>
+      <button class="btn primary sm" onclick="forceReload()">Yenile</button>
+    </div>
+
+    <!-- HATIRLATMA ŞERİDİ (cihaza özel) -->
+    <div id="reminderBar" class="hidden" style="background:var(--warn-bg);border:1px solid #FDE0B8;border-radius:var(--r);padding:12px 14px;margin:14px 0;display:flex;align-items:center;gap:10px">
+      <span style="font-size:18px">🔔</span>
+      <div style="flex:1"><div style="font-weight:700;font-size:14px" id="reminderText">Kampanyaları güncelleme zamanı geldi</div><div style="font-size:12.5px;color:var(--muted)" id="reminderSub"></div></div>
+      <button class="btn primary sm" onclick="switchView('guncelle')">Güncelle</button>
+    </div>
+
     <!-- SORGU -->
     <section id="view-sorgu">
       <div class="chips" id="sektorChips"></div>
@@ -186,6 +218,44 @@
     <section id="view-kart" class="hidden">
       <div class="listhead"><h2>Kartlarım</h2><button class="btn primary sm" onclick="openCard()">+ Kart</button></div>
       <div id="cardList"></div>
+    </section>
+
+    <!-- GÜNCELLE -->
+    <section id="view-guncelle" class="hidden">
+      <div class="gcard">
+        <h2 class="gtitle">Aylık güncelleme — 3 adım</h2>
+        <p class="gp">Kampanyalar zamanla eskir. Ayda bir bu üç adımla tazele; toplam ~5 dakika.</p>
+        <ol class="gsteps">
+          <li><b>A-asistanına sor.</b> Claude'da <b>“Kart Kampanya Asistanı”</b> Project'inde yeni sohbet aç (web arama açık), aşağıdaki cümleyi yapıştır.</li>
+          <li><b>JSON'u kopyala.</b> Asistan sadece JSON verir; tamamını kopyala.</li>
+          <li><b>İçe aktar.</b> <b>Kampanyalar → ↓ İçe aktar</b> → yapıştır → Önizle → Ekle. (Zaten var olanlar otomatik elenir.)</li>
+        </ol>
+        <div class="gbox">
+          <div class="glabel">Besleme cümlesi <button class="mini" onclick="copyFeed()">kopyala</button></div>
+          <textarea id="feedText" readonly class="gfeed">Şu sektörleri web'de tara ve hepsini İÇE AKTARILACAK tek bir JSON dizisinde ver (süresi geçmişleri ekleme, açıklama yazma): sağlık, akaryakıt, market, giyim, e-ticaret, elektronik, seyahat, restoran, mobilya, eğitim. Her kampanya için ilgili kartı belirt; World kampanyalarında bankayı (Yapı Kredi / VakıfBank) yaz.</textarea>
+        </div>
+        <div class="gactions">
+          <button class="btn ghost sm" onclick="cleanExpired()">🧹 Süresi geçmişleri sil</button>
+          <button class="btn ghost sm" onclick="markFed()">✓ Güncelledim (sayacı sıfırla)</button>
+        </div>
+      </div>
+
+      <div class="gcard">
+        <h2 class="gtitle">Hatırlatma <span style="font-weight:500;font-size:12.5px;color:var(--muted)">(yalnız bu cihazda)</span></h2>
+        <p class="gp">Süre dolunca uygulamayı açtığında üstte hatırlatma çıkar. Bu ayar başka cihazları etkilemez.</p>
+        <div class="grow">
+          <label class="gswitch"><input type="checkbox" id="remOn" onchange="saveReminder()"> Hatırlatmayı aç</label>
+        </div>
+        <div class="grow">
+          <span class="gp" style="margin:0">Periyot:</span>
+          <select id="remPeriod" onchange="saveReminder()">
+            <option value="14">2 haftada bir</option>
+            <option value="30" selected>Ayda bir</option>
+            <option value="60">2 ayda bir</option>
+          </select>
+        </div>
+        <div class="gp" id="remStatus" style="margin-top:8px"></div>
+      </div>
     </section>
   </main>
 </div>
@@ -296,6 +366,9 @@
 <div id="toast"></div>
 
 <script>
+/* ---------------- Sürüm ---------------- */
+const APP_VERSION='2026.06.29-1';   // her güncellemede artar; telefonlar bunu görüp "Yenile" der
+
 /* ---------------- Durum ---------------- */
 let sb=null, CARDS=[], CAMPS=[], activeSektor='Tümü';
 const SEKTORLER=['Tümü','sağlık','akaryakıt','market','giyim','eğitim','e-ticaret','mobilya','elektronik','seyahat','restoran'];
@@ -339,6 +412,8 @@ async function boot(){
     $('setup').classList.add('hidden'); $('app').classList.remove('hidden');
     buildChips();
     await loadAll();
+    checkReminder();
+    checkForUpdate();
     $('conn').classList.add('on');
   }catch(e){ toast('Bağlantı kurulamadı',true); console.error(e); $('setup').classList.remove('hidden'); $('app').classList.add('hidden'); }
 }
@@ -458,8 +533,9 @@ function renderCardList(){
 
 /* ---------------- Görünüm ---------------- */
 function switchView(v){
-  ['sorgu','kampanya','kart'].forEach(x=>$('view-'+x).classList.toggle('hidden',x!==v));
+  ['sorgu','kampanya','kart','guncelle'].forEach(x=>$('view-'+x).classList.toggle('hidden',x!==v));
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.view===v));
+  if(v==='guncelle') loadReminderUI();
 }
 function fillSektorList(){
   const set=new Set(SEKTORLER.filter(s=>s!=='Tümü'));
@@ -580,9 +656,11 @@ function previewImport(){
 
   IMPORT_ROWS=data.map((c,i)=>{
     const mt=matchCard(c.kart||c.card||c.program||c.banka);
+    const baslik=c.baslik||c.title||'';
+    const dup = mt.id && CAMPS.some(e=>e.card_id===mt.id && trLower(e.baslik)===trLower(baslik));
     return {
-      i, card_id:mt.id, ambiguous:mt.ambiguous, karthint:c.kart||c.program||c.banka||'',
-      sektor:c.sektor||'', baslik:c.baslik||c.title||'', tip:c.tip||'indirim',
+      i, card_id:mt.id, ambiguous:mt.ambiguous, dup, karthint:c.kart||c.program||c.banka||'',
+      sektor:c.sektor||'', baslik, tip:c.tip||'indirim',
       odul:c.odul||null, kosul:c.kosul||null,
       min_tutar:(c.min_tutar!=null&&c.min_tutar!=='')?Number(c.min_tutar):null,
       baslangic:c.baslangic||null, bitis:c.bitis||null, kaynak:c.kaynak||null, notlar:c.notlar||c.not||null
@@ -594,9 +672,9 @@ function previewImport(){
 
   $('importPreview').innerHTML = IMPORT_ROWS.map(r=>{
     const st=status(r); const bad=!r.card_id;
-    return `<div class="crow" style="margin-bottom:10px"><div class="stripe" style="background:${bad?'var(--dead)':'var(--accent)'}"></div>
+    return `<div class="crow" style="margin-bottom:10px${r.dup?';opacity:.6':''}"><div class="stripe" style="background:${r.dup?'var(--dead)':(bad?'var(--dead)':'var(--accent)')}"></div>
       <div class="body" style="padding:11px 13px">
-        <div class="head"><span class="name" style="font-size:14.5px">${esc(r.baslik)||'<i>başlık yok</i>'}</span><span class="prog">${esc(r.sektor)}</span></div>
+        <div class="head"><span class="name" style="font-size:14.5px">${esc(r.baslik)||'<i>başlık yok</i>'}</span><span class="prog">${esc(r.sektor)}</span>${r.dup?'<span class="badge dead">zaten var</span>':''}</div>
         <div class="meta" style="font-size:12.5px;color:var(--muted);margin-top:3px">${r.odul?esc(r.odul)+' · ':''}${r.bitis?'bitiş '+fmtDate(r.bitis):'tarih yok'} <span class="badge ${st.k}" style="margin-left:4px">${st.label}</span></div>
         <div style="margin-top:8px"><select onchange="IMPORT_ROWS[${r.i}].card_id=this.value;updateImpCount()" style="width:100%;border:1px solid ${bad?'#FCA5A5':'var(--line)'};border-radius:9px;padding:8px 10px;font-size:13.5px">${cardOpts(r.card_id)}</select>
         ${r.ambiguous?'<div style="font-size:11.5px;color:var(--warn);margin-top:4px">Bu program birden fazla karta uyuyor — doğru kartı seç.</div>':''}
@@ -608,23 +686,91 @@ function previewImport(){
   updateImpCount();
 }
 function updateImpCount(){
-  const n=IMPORT_ROWS.filter(r=>r.card_id&&r.baslik&&r.sektor).length;
+  const n=IMPORT_ROWS.filter(r=>r.card_id&&r.baslik&&r.sektor&&!r.dup).length;
   $('impAddBtn').textContent = n>0?`${n} kampanyayı ekle`:'Eklenecek yok';
   $('impAddBtn').disabled = n===0;
   $('impAddBtn').style.opacity = n===0?0.5:1;
 }
 async function runImport(){
-  const rows=IMPORT_ROWS.filter(r=>r.card_id&&r.baslik&&r.sektor).map(r=>({
+  const rows=IMPORT_ROWS.filter(r=>r.card_id&&r.baslik&&r.sektor&&!r.dup).map(r=>({
     card_id:r.card_id, sektor:r.sektor, baslik:r.baslik, tip:r.tip, odul:r.odul, kosul:r.kosul,
     min_tutar:r.min_tutar, baslangic:r.baslangic, bitis:r.bitis, kaynak:r.kaynak, notlar:r.notlar
   }));
-  if(rows.length===0){ toast('Eklenecek kampanya yok',true); return; }
+  if(rows.length===0){ toast('Eklenecek yeni kampanya yok',true); return; }
   const r=await sb.from('campaigns').insert(rows);
   if(r.error){ toast('İçe aktarılamadı',true); console.error(r.error); return; }
-  closeModal('importModal'); toast(rows.length+' kampanya eklendi'); await loadAll(); switchView('kampanya');
+  closeModal('importModal'); toast(rows.length+' kampanya eklendi'); markFed(true); await loadAll(); switchView('kampanya');
 }
 
 function closeModal(id){$(id).classList.remove('open');}
+
+/* ---------------- Sürüm denetimi (otomatik güncelleme) ---------------- */
+async function checkForUpdate(){
+  if(!location.protocol.startsWith('http')) return;   // file:// üzerinde çalışmaz, gerek de yok
+  try{
+    const res=await fetch(location.pathname+'?_ts='+Date.now(),{cache:'no-store'});
+    const html=await res.text();
+    const m=html.match(/APP_VERSION\s*=\s*['"]([^'"]+)['"]/);
+    if(m && m[1] && m[1]!==APP_VERSION){
+      $('updateBar').classList.remove('hidden');
+    }
+  }catch(e){ /* ağ yoksa sessiz geç */ }
+}
+function forceReload(){
+  // önbelleği atlamak için sorgu parametresiyle taze yükle
+  location.replace(location.pathname+'?u='+Date.now());
+}
+
+/* ---------------- Güncelle + Hatırlatma (cihaza özel, localStorage) ---------------- */
+function copyFeed(){
+  const t=$('feedText');
+  navigator.clipboard.writeText(t.value).then(()=>toast('Besleme cümlesi kopyalandı'))
+    .catch(()=>{ t.select(); document.execCommand('copy'); toast('Kopyalandı'); });
+}
+async function cleanExpired(){
+  const t=todayISO();
+  const expired=CAMPS.filter(c=>c.bitis && c.bitis<t);
+  if(expired.length===0){ toast('Süresi geçmiş kampanya yok'); return; }
+  if(!confirm(expired.length+' adet süresi geçmiş kampanya silinecek. Onaylıyor musun?')) return;
+  const r=await sb.from('campaigns').delete().lt('bitis',t);
+  if(r.error){ toast('Silinemedi',true); console.error(r.error); return; }
+  toast(expired.length+' kampanya silindi'); await loadAll();
+}
+function markFed(silent){
+  localStorage.setItem('ccc_lastFed', todayISO());
+  checkReminder();
+  if($('view-guncelle') && !$('view-guncelle').classList.contains('hidden')) loadReminderUI();
+  if(!silent) toast('Güncelleme sayacı sıfırlandı');
+}
+function saveReminder(){
+  localStorage.setItem('ccc_remOn', $('remOn').checked?'1':'0');
+  localStorage.setItem('ccc_remPeriod', $('remPeriod').value);
+  checkReminder(); loadReminderUI();
+}
+function daysSince(iso){ if(!iso) return null; const ms=Date.now()-new Date(iso+'T00:00:00').getTime(); return Math.floor(ms/86400000); }
+function loadReminderUI(){
+  const on=localStorage.getItem('ccc_remOn')==='1';
+  const period=localStorage.getItem('ccc_remPeriod')||'30';
+  const last=localStorage.getItem('ccc_lastFed');
+  $('remOn').checked=on; $('remPeriod').value=period;
+  const d=daysSince(last);
+  $('remStatus').innerHTML = (last
+    ? `Son güncelleme: <b>${fmtDate(last)}</b> (${d} gün önce). ${on?`Sonraki hatırlatma ~${Math.max(0,Number(period)-d)} gün sonra.`:'Hatırlatma kapalı.'}`
+    : (on?'Henüz güncelleme yapılmadı — ilk beslemeden sonra sayaç başlar.':'Hatırlatma kapalı.'))
+    + `<br><span style="font-size:11.5px;opacity:.7">Sürüm ${APP_VERSION}</span>`;
+}
+function checkReminder(){
+  const bar=$('reminderBar'); if(!bar) return;
+  const on=localStorage.getItem('ccc_remOn')==='1';
+  const period=Number(localStorage.getItem('ccc_remPeriod')||'30');
+  const last=localStorage.getItem('ccc_lastFed');
+  const d=daysSince(last);
+  const due = on && (d===null || d>=period);
+  bar.classList.toggle('hidden', !due);
+  if(due){
+    $('reminderSub').textContent = last ? `Son güncelleme ${d} gün önceydi.` : 'Henüz hiç güncelleme yapılmadı.';
+  }
+}
 
 /* ---------------- PWA manifest (inline) ---------------- */
 (function(){
@@ -633,6 +779,9 @@ function closeModal(id){$(id).classList.remove('open');}
   const blob=new Blob([JSON.stringify(man)],{type:'application/json'});
   const l=document.createElement('link'); l.rel='manifest'; l.href=URL.createObjectURL(blob); document.head.appendChild(l);
 })();
+
+// Uygulama (özellikle ana ekrandaki PWA) yeniden öne gelince güncellemeyi tekrar kontrol et
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden && sb){ checkForUpdate(); checkReminder(); } });
 
 boot();
 </script>
